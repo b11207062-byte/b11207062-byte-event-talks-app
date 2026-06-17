@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình Khám Phá Bản Phát Hành BigQuery</title>
+    
+    <!-- Meta tags for SEO -->
+    <meta name="description" content="Bảng điều khiển tương tác cao cấp để khám phá, lọc và phân tích các bản cập nhật phát hành của Google Cloud BigQuery. Theo dõi các tính năng mới, thay đổi lớn và thông báo.">
+    <meta name="author" content="Trợ lý Lập trình Antigravity">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="app-container">
+    
+    <!-- Sidebar -->
+    <aside id="sidebar" class="app-sidebar">
+        <!-- Brand / Header -->
+        <div class="sidebar-brand">
+            <div class="brand-wrapper">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-database"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>BQ Explorer</h1>
+                    <span>Bảng Cập Nhật</span>
+                </div>
+            </div>
+            
+            <button id="toggle-sidebar" class="icon-btn toggle-sidebar-btn">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+        
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar-nav">
+            <button id="tab-explorer-btn" class="nav-item active">
+                <i class="fa-solid fa-compass"></i>
+                <span>Danh sách cập nhật</span>
+            </button>
+            <button id="tab-analytics-btn" class="nav-item">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Phân tích & Xu hướng</span>
+            </button>
+        </nav>
+        
+        <!-- Filter Controls -->
+        <div class="sidebar-filters custom-scrollbar">
+            <!-- Search -->
+            <div class="filter-group">
+                <label for="search-input" class="filter-label">Tìm kiếm cập nhật</label>
+                <div class="search-wrapper">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="search-input" placeholder="Từ khóa, Gemini, UDF..." class="search-input">
+                </div>
+            </div>
+            
+            <!-- Type Filters -->
+            <div class="filter-group">
+                <div class="filter-header">
+                    <label class="filter-label">Phân loại cập nhật</label>
+                    <button id="clear-types-btn" class="text-link-btn">Xóa tất cả</button>
+                </div>
+                <div id="type-filter-group" class="checkbox-list">
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="Feature" checked class="filter-checkbox">
+                        <span class="type-indicator-dot" style="background-color: var(--type-feature);"></span>
+                        <span class="checkbox-text">Tính năng mới</span>
+                        <span class="type-indicator-count" id="count-Feature">0</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="Change" checked class="filter-checkbox">
+                        <span class="type-indicator-dot" style="background-color: var(--type-change);"></span>
+                        <span class="checkbox-text">Thay đổi</span>
+                        <span class="type-indicator-count" id="count-Change">0</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="Breaking" checked class="filter-checkbox">
+                        <span class="type-indicator-dot" style="background-color: var(--type-breaking);"></span>
+                        <span class="checkbox-text">Thay đổi đột phá</span>
+                        <span class="type-indicator-count" id="count-Breaking">0</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="Issue" checked class="filter-checkbox">
+                        <span class="type-indicator-dot" style="background-color: var(--type-issue);"></span>
+                        <span class="checkbox-text">Lỗi phát sinh</span>
+                        <span class="type-indicator-count" id="count-Issue">0</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="Announcement" checked class="filter-checkbox">
+                        <span class="type-indicator-dot" style="background-color: var(--type-announcement);"></span>
+                        <span class="checkbox-text">Thông báo</span>
+                        <span class="type-indicator-count" id="count-Announcement">0</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="Deprecated" checked class="filter-checkbox">
+                        <span class="type-indicator-dot" style="background-color: var(--type-deprecated);"></span>
+                        <span class="checkbox-text">Không hỗ trợ nữa</span>
+                        <span class="type-indicator-count" id="count-Deprecated">0</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" value="Fixed" checked class="filter-checkbox">
+                        <span class="type-indicator-dot" style="background-color: var(--type-fixed);"></span>
+                        <span class="checkbox-text">Đã sửa lỗi</span>
+                        <span class="type-indicator-count" id="count-Fixed">0</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Date Filter -->
+            <div class="filter-group">
+                <label for="date-range-select" class="filter-label">Khoảng thời gian</label>
+                <select id="date-range-select" class="select-dropdown">
+                    <option value="all">Tất cả thời gian</option>
+                    <option value="30">30 ngày qua</option>
+                    <option value="90">90 ngày qua</option>
+                    <option value="180">6 tháng qua</option>
+                    <option value="365">1 năm qua</option>
+                </select>
+            </div>
+            
+            <!-- Bookmark Toggle -->
+            <label class="starred-toggle-card">
+                <input type="checkbox" id="bookmark-filter-toggle" class="filter-checkbox">
+                <i class="fa-solid fa-star" style="color: #fbbf24;"></i>
+                <span class="starred-toggle-label">Chỉ mục đã lưu</span>
+                <span id="starred-total" class="starred-toggle-count">0</span>
+            </label>
+        </div>
+        
+        <!-- Sidebar Footer -->
+        <div class="sidebar-footer">
+            <div class="footer-meta">
+                <span>Phiên bản nguồn</span>
+                <span class="version-badge">v1.0</span>
+            </div>
+            <a href="https://cloud.google.com/feeds/bigquery-release-notes.xml" target="_blank" rel="noopener noreferrer" class="rss-link">
+                <i class="fa-solid fa-rss"></i> Nguồn Atom chính thức
+            </a>
+        </div>
+    </aside>
+    
+    <!-- Main Content Panel -->
+    <main class="app-content">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-title-group">
+                <h2 id="main-view-title">Khám Phá Bản Cập Nhật</h2>
+                <p id="search-status">Đang tải dữ liệu bản phát hành...</p>
+            </div>
+            
+            <div class="header-actions">
+                <!-- Last refreshed info -->
+                <div class="sync-status">
+                    <span>Đồng bộ cuối</span>
+                    <span id="sync-time">Đang cập nhật...</span>
+                </div>
+                
+                <!-- Refresh Button -->
+                <button id="refresh-feed-btn" class="icon-btn" title="Đồng bộ lại bản cập nhật">
+                    <i id="refresh-icon" class="fa-solid fa-rotate"></i>
+                </button>
+                
+                <!-- Divider -->
+                <div class="header-divider"></div>
+                
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" class="icon-btn">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+        </header>
+        
+        <!-- View Content Wrapper -->
+        <div class="view-container">
+            
+            <!-- Dashboard Quick Metrics Card Grid (Only visible in explorer/home) -->
+            <section id="metrics-section" class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-icon bg-sky-10">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="metric-card-text">
+                        <span>Tổng số cập nhật</span>
+                        <h3 id="total-count-display">0</h3>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-icon bg-emerald-10">
+                        <i class="fa-solid fa-rocket"></i>
+                    </div>
+                    <div class="metric-card-text">
+                        <span>Tính năng đã thêm</span>
+                        <h3 id="feature-count-display">0</h3>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-icon bg-rose-10">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="metric-card-text">
+                        <span>Lỗi & Thay đổi lớn</span>
+                        <h3 id="breaking-count-display">0</h3>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-card-icon bg-amber-10">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div class="metric-card-text">
+                        <span>Bản ghi đã lưu</span>
+                        <h3 id="starred-count-display">0</h3>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Page Views -->
+            <!-- 1. Notes Feed Explorer View -->
+            <section id="explorer-view">
+                <!-- Grouping / Order controls -->
+                <div class="view-subheader">
+                    <h3>Danh sách cập nhật theo thời gian</h3>
+                    
+                    <div class="sort-controls">
+                        <span class="sort-label">Sắp xếp</span>
+                        <button id="sort-order-btn" class="btn-secondary">
+                            <span>Mới nhất trước</span>
+                            <i class="fa-solid fa-sort-down"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Releases List Container -->
+                <div id="release-notes-container">
+                    <div class="loading-state py-20 text-center flex flex-col items-center justify-center gap-4">
+                        <i class="fa-solid fa-circle-notch fa-spin text-3xl text-sky-500"></i>
+                        <span class="text-slate-400 font-medium">Đang tải dữ liệu từ Google Cloud feeds...</span>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 2. Analytics View -->
+            <section id="analytics-view" class="hidden">
+                <div class="view-subheader">
+                    <div>
+                        <h3 style="font-size: 1.25rem;">Số liệu & Xu hướng bản phát hành</h3>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Tổng quan trực quan dựa trên lịch sử bản phát hành</p>
+                    </div>
+                </div>
+                
+                <div class="charts-grid-half" style="margin-top: 24px;">
+                    <!-- Chart 1: Stacked Bar Chart (Releases over Time) -->
+                    <div class="chart-wrapper-card">
+                        <h4 class="chart-title">Tần suất bản phát hành theo tháng</h4>
+                        <div class="chart-container-canvas">
+                            <canvas id="frequencyChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart 2: Doughnut Chart (Types distribution) -->
+                    <div class="chart-wrapper-card">
+                        <h4 class="chart-title">Phân bổ loại cập nhật</h4>
+                        <div class="chart-container-canvas">
+                            <canvas id="typeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="charts-grid-split" style="margin-top: 24px;">
+                    <!-- Top Features & Keywords list -->
+                    <div class="chart-wrapper-card">
+                        <h4 class="chart-title">Các công nghệ & Dịch vụ được nhắc đến nhiều</h4>
+                        <div class="chart-container-canvas" style="height: 256px;">
+                            <canvas id="keywordChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Analytics Summary Block -->
+                    <div class="insight-summary-card">
+                        <div>
+                            <h4 class="insight-title">Tổng Hợp Thông Tin Chính</h4>
+                            <ul class="insight-list">
+                                <li class="insight-item">
+                                    <i class="fa-solid fa-circle-check" style="color: var(--type-feature);"></i>
+                                    <span><strong>Bùng nổ Generative AI:</strong> Các cập nhật thường xuyên cho BigQuery AI và trợ lý Gemini Cloud Assist cho thấy định hướng tập trung mạnh mẽ vào dịch vụ AI tạo sinh.</span>
+                                </li>
+                                <li class="insight-item">
+                                    <i class="fa-solid fa-circle-info" style="color: var(--accent-sky);"></i>
+                                    <span><strong>Tái cấu trúc thương hiệu:</strong> Các thông báo đổi tên dịch vụ lớn (ví dụ: Dataproc thành Spark, BigLake thành Lakehouse, Looker thành Data Studio).</span>
+                                </li>
+                                <li class="insight-item">
+                                    <i class="fa-solid fa-triangle-exclamation" style="color: var(--type-breaking);"></i>
+                                    <span><strong>Yêu cầu xác thực MFA:</strong> Việc bắt buộc nâng cấp bảo mật đa yếu tố đối với việc truyền dữ liệu cho thấy sự thắt chặt kiểm soát truy cập.</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="insight-footer">
+                            <span>Công cụ phân tích</span>
+                            <span class="insight-active-tag">Đang hoạt động</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+    
+    <!-- Custom JS -->
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
